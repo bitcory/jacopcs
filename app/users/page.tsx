@@ -123,7 +123,7 @@ export default function UsersPage() {
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
               placeholder="새 이름 입력"
             />
             <div className="flex gap-2">
