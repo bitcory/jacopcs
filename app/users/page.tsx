@@ -12,6 +12,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
     if (!authLoading) {
@@ -62,6 +64,23 @@ export default function UsersPage() {
     }
   };
 
+  const updateUserName = async () => {
+    if (!editingUser || !newName.trim()) return;
+    try {
+      await updateDoc(doc(db, 'users', editingUser.uid), { displayName: newName.trim() });
+      setUsers(users.map(u => u.uid === editingUser.uid ? { ...u, displayName: newName.trim() } : u));
+      setEditingUser(null);
+      setNewName('');
+    } catch (error) {
+      console.error('Error updating user name:', error);
+    }
+  };
+
+  const openEditModal = (u: AppUser) => {
+    setEditingUser(u);
+    setNewName(u.displayName);
+  };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('ko-KR');
   };
@@ -83,6 +102,48 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* 이름 수정 모달 */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">이름 수정</h3>
+            <div className="flex items-center gap-3 mb-4">
+              {editingUser.photoURL ? (
+                <img src={editingUser.photoURL} alt="Profile" className="w-12 h-12 rounded-full" />
+              ) : (
+                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <span className="text-indigo-600 font-medium text-lg">{editingUser.displayName?.charAt(0) || '?'}</span>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-500">{editingUser.email}</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="새 이름 입력"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={updateUserName}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
@@ -123,7 +184,7 @@ export default function UsersPage() {
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors">
+              <a href="/stats" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -131,7 +192,7 @@ export default function UsersPage() {
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors">
+              <a href="/settings" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -325,6 +386,12 @@ export default function UsersPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(u)}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      >
+                        이름 수정
+                      </button>
                       {u.uid !== appUser.uid && (
                         <>
                           {u.role === 'user' ? (
