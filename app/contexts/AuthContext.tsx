@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, query, where, deleteDoc, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 export interface UserGroup {
@@ -44,9 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchGroups = async () => {
     try {
-      const q = query(collection(db, 'groups'), orderBy('createdAt', 'asc'));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserGroup));
+      const snapshot = await getDocs(collection(db, 'groups'));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as UserGroup));
+      // 클라이언트에서 정렬
+      data.sort((a, b) => a.createdAt - b.createdAt);
       setGroups(data);
     } catch (error) {
       console.error('Error fetching groups:', error);
@@ -58,18 +59,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const id = Date.now().toString();
       const newGroup: UserGroup = { id, name, createdAt: Date.now() };
       await setDoc(doc(db, 'groups', id), newGroup);
-      setGroups([...groups, newGroup]);
+      // 함수형 업데이트로 최신 상태 보장
+      setGroups(prev => [...prev, newGroup]);
     } catch (error) {
       console.error('Error adding group:', error);
+      throw error;
     }
   };
 
   const deleteGroup = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'groups', id));
-      setGroups(groups.filter(g => g.id !== id));
+      // 함수형 업데이트로 최신 상태 보장
+      setGroups(prev => prev.filter(g => g.id !== id));
     } catch (error) {
       console.error('Error deleting group:', error);
+      throw error;
     }
   };
 
