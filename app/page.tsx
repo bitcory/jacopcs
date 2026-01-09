@@ -467,80 +467,8 @@ export default function Home() {
           </ul>
         </nav>
 
-        {/* 필터 영역 */}
-        <div className="p-4 space-y-4 overflow-y-auto flex-1">
-          {/* 검색 */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-2 flex items-center gap-1">
-              <Search className="w-3 h-3" />
-              검색
-            </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="전화번호, 직원명..."
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          {/* 기간 필터 */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-2 flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              기간 필터
-            </label>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">시작일</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">종료일</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 직원 필터 */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-2">직원 필터</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="all">전체 직원</option>
-              {employees.map(emp => (
-                <option key={emp} value={emp}>{emp}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 필터 초기화 */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-sm"
-            >
-              <XCircle className="w-4 h-4" />
-              필터 초기화
-            </button>
-          )}
-        </div>
-
         {/* 하단 영역 */}
-        <div className="p-4 border-t border-slate-700">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
           {/* 앱 다운로드 버튼 */}
           <a
             href="/jcopcs.apk"
@@ -615,56 +543,143 @@ export default function Home() {
 
         {/* 본문 */}
         <main className="p-4 lg:p-8">
-          {/* 통계 카드 */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* 상단 섹션: 캘린더/검색 + 통계 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
+            {/* 좌측: 캘린더 및 검색 */}
             <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">전체 녹음</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">{recordings.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <Mic className="w-6 h-6 text-indigo-600" />
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                검색 및 필터
+              </h3>
+
+              {/* 검색 */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="전화번호, 직원명 검색..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
+              {/* 기간 필터 */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">시작일</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">종료일</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 직원 필터 */}
                 <div>
-                  <p className="text-sm text-gray-500">직원 수</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">{employees.length}</p>
+                  <label className="block text-xs text-gray-500 mb-1">직원</label>
+                  <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="all">전체 직원</option>
+                    {employees.map(emp => (
+                      <option key={emp} value={emp}>{emp}</option>
+                    ))}
+                  </select>
                 </div>
-                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-emerald-600" />
-                </div>
+
+                {/* 필터 초기화 */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors text-sm"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    필터 초기화
+                  </button>
+                )}
               </div>
-            </div>
 
-            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">수신 통화</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
-                    {recordings.filter(r => r.callType === 'incoming').length}
+              {/* 필터 결과 표시 */}
+              {hasActiveFilters && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    검색 결과: <span className="font-semibold text-indigo-600">{filteredRecordings.length}</span>건
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <PhoneIncoming className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">발신 통화</p>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
-                    {recordings.filter(r => r.callType === 'outgoing').length}
-                  </p>
+            {/* 우측: 2x2 통계 그리드 */}
+            <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">전체 녹음</p>
+                    <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">{filteredRecordings.length}</p>
+                    {hasActiveFilters && (
+                      <p className="text-xs text-gray-400 mt-1">전체 {recordings.length}건 중</p>
+                    )}
+                  </div>
+                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Mic className="w-6 h-6 text-indigo-600" />
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                  <PhoneOutgoing className="w-6 h-6 text-orange-600" />
+              </div>
+
+              <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">직원 수</p>
+                    <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">{employees.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <Users className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">수신 통화</p>
+                    <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
+                      {filteredRecordings.filter(r => r.callType === 'incoming').length}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <PhoneIncoming className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">발신 통화</p>
+                    <p className="text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
+                      {filteredRecordings.filter(r => r.callType === 'outgoing').length}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <PhoneOutgoing className="w-6 h-6 text-orange-600" />
+                  </div>
                 </div>
               </div>
             </div>
