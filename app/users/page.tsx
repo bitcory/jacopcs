@@ -382,77 +382,75 @@ export default function UsersPage() {
           {/* 승인된 사용자 */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="px-4 lg:px-6 py-3 lg:py-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-800 text-sm lg:text-base">승인된 사용자</h3>
+              <h3 className="font-semibold text-gray-800 text-sm lg:text-base">승인된 사용자 ({approvedUsers.length})</h3>
             </div>
             {approvedUsers.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
+              <div className="p-8 text-center text-gray-500">
                 승인된 사용자가 없습니다
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {approvedUsers.map((u) => (
-                  <div key={u.uid} className="p-3 lg:p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      {u.photoURL ? (
-                        <img src={u.photoURL} alt="Profile" className="w-10 h-10 lg:w-12 lg:h-12 rounded-full" />
-                      ) : (
-                        <div className="w-10 h-10 lg:w-12 lg:h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <span className="text-indigo-600 font-medium">{u.displayName?.charAt(0) || '?'}</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900 text-sm lg:text-base truncate">{u.displayName}</p>
-                          {u.role === 'admin' && (
-                            <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full whitespace-nowrap">
-                              관리자
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs lg:text-sm text-gray-500 truncate">{u.email}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">가입: {formatDate(u.createdAt)}</p>
+                  <div key={u.uid} className="px-3 py-2 lg:px-4 lg:py-3 flex items-center gap-3 hover:bg-gray-50">
+                    {/* 프로필 */}
+                    {u.photoURL ? (
+                      <img src={u.photoURL} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-indigo-600 font-medium text-sm">{u.displayName?.charAt(0) || '?'}</span>
                       </div>
+                    )}
+                    {/* 정보 */}
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="font-medium text-gray-900 text-sm truncate">{u.displayName}</span>
+                      {u.role === 'admin' && (
+                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded flex-shrink-0">
+                          관리자
+                        </span>
+                      )}
+                      <span className="text-gray-400 text-xs hidden sm:inline truncate">{u.email}</span>
                     </div>
-                    <div className="grid grid-cols-4 gap-1.5 lg:gap-2">
+                    {/* 액션 버튼 */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => openEditModal(u)}
-                        className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-xs font-medium whitespace-nowrap"
+                        className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        title="이름 수정"
                       >
-                        <Pencil className="w-3.5 h-3.5" />
-                        <span>수정</span>
+                        <Pencil className="w-4 h-4" />
                       </button>
                       {u.uid !== appUser.uid && (
                         <>
                           {u.role === 'user' ? (
                             <button
                               onClick={() => updateUserRole(u.uid, 'admin')}
-                              className="flex items-center justify-center gap-1 px-2 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-xs font-medium whitespace-nowrap"
+                              className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                              title="관리자 권한 부여"
                             >
-                              <Shield className="w-3.5 h-3.5" />
-                              <span>관리자</span>
+                              <Shield className="w-4 h-4" />
                             </button>
                           ) : (
                             <button
                               onClick={() => updateUserRole(u.uid, 'user')}
-                              className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium whitespace-nowrap"
+                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                              title="관리자 권한 해제"
                             >
-                              <ShieldOff className="w-3.5 h-3.5" />
-                              <span>해제</span>
+                              <ShieldOff className="w-4 h-4" />
                             </button>
                           )}
                           <button
                             onClick={() => updateUserStatus(u.uid, 'rejected')}
-                            className="flex items-center justify-center gap-1 px-2 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-xs font-medium whitespace-nowrap"
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            title="차단"
                           >
-                            <Ban className="w-3.5 h-3.5" />
-                            <span>차단</span>
+                            <Ban className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => deleteUser(u.uid, u.displayName)}
-                            className="flex items-center justify-center gap-1 px-2 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs font-medium whitespace-nowrap"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="삭제"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>삭제</span>
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </>
                       )}
