@@ -508,79 +508,150 @@ export default function UsersPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {approvedUsers.map((u) => (
-                  <div key={u.uid} className="px-3 py-2.5 lg:px-4 lg:py-3 flex items-center gap-3 hover:bg-gray-50">
-                    {/* 프로필 */}
-                    {u.photoURL ? (
-                      <img src={u.photoURL} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-indigo-600 font-medium text-sm">{u.displayName?.charAt(0) || '?'}</span>
+                  <div key={u.uid} className="p-3 lg:px-4 lg:py-3 hover:bg-gray-50">
+                    {/* 모바일: 세로 레이아웃 */}
+                    <div className="lg:hidden">
+                      <div className="flex items-center gap-3 mb-2">
+                        {u.photoURL ? (
+                          <img src={u.photoURL} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-indigo-600 font-medium">{u.displayName?.charAt(0) || '?'}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 text-sm truncate">{u.displayName}</span>
+                            {u.role === 'admin' && (
+                              <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded flex-shrink-0">
+                                관리자
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                          <p className="text-xs text-gray-400">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</p>
+                        </div>
                       </div>
-                    )}
-                    {/* 정보 */}
-                    <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 text-sm">{u.displayName}</span>
-                      {u.role === 'admin' && (
-                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded">
-                          관리자
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-400 truncate">{u.email}</span>
-                      <span className="text-xs text-gray-300">•</span>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          value={u.groupId || ''}
+                          onChange={(e) => updateUserGroup(u.uid, e.target.value || undefined)}
+                          className="text-xs border border-gray-200 rounded px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        >
+                          <option value="">미지정</option>
+                          {groups.map((group) => (
+                            <option key={group.id} value={group.id}>{group.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => openEditModal(u)}
+                          className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          수정
+                        </button>
+                        {u.uid !== appUser.uid && (
+                          <>
+                            {u.role === 'user' ? (
+                              <button
+                                onClick={() => updateUserRole(u.uid, 'admin')}
+                                className="px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors"
+                              >
+                                관리자
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => updateUserRole(u.uid, 'user')}
+                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                              >
+                                해제
+                              </button>
+                            )}
+                            <button
+                              onClick={() => updateUserStatus(u.uid, 'rejected')}
+                              className="px-2.5 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
+                            >
+                              차단
+                            </button>
+                            <button
+                              onClick={() => deleteUser(u.uid, u.displayName)}
+                              className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            >
+                              삭제
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    {/* 그룹 선택 */}
-                    <div className="flex-shrink-0">
+
+                    {/* 데스크톱: 가로 레이아웃 */}
+                    <div className="hidden lg:flex items-center gap-3">
+                      {u.photoURL ? (
+                        <img src={u.photoURL} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-indigo-600 font-medium text-sm">{u.displayName?.charAt(0) || '?'}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-gray-900 text-sm">{u.displayName}</span>
+                        {u.role === 'admin' && (
+                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded">
+                            관리자
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-400 truncate">{u.email}</span>
+                        <span className="text-xs text-gray-300">•</span>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
+                      </div>
                       <select
                         value={u.groupId || ''}
                         onChange={(e) => updateUserGroup(u.uid, e.target.value || undefined)}
-                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 flex-shrink-0"
                       >
                         <option value="">미지정</option>
                         {groups.map((group) => (
                           <option key={group.id} value={group.id}>{group.name}</option>
                         ))}
                       </select>
-                    </div>
-                    {/* 액션 버튼 */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => openEditModal(u)}
-                        className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
-                      >
-                        수정
-                      </button>
-                      {u.uid !== appUser.uid && (
-                        <>
-                          {u.role === 'user' ? (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => openEditModal(u)}
+                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                        >
+                          수정
+                        </button>
+                        {u.uid !== appUser.uid && (
+                          <>
+                            {u.role === 'user' ? (
+                              <button
+                                onClick={() => updateUserRole(u.uid, 'admin')}
+                                className="px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors"
+                              >
+                                관리자
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => updateUserRole(u.uid, 'user')}
+                                className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                              >
+                                해제
+                              </button>
+                            )}
                             <button
-                              onClick={() => updateUserRole(u.uid, 'admin')}
-                              className="px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors"
+                              onClick={() => updateUserStatus(u.uid, 'rejected')}
+                              className="px-2.5 py-1 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
                             >
-                              관리자
+                              차단
                             </button>
-                          ) : (
                             <button
-                              onClick={() => updateUserRole(u.uid, 'user')}
-                              className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                              onClick={() => deleteUser(u.uid, u.displayName)}
+                              className="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
                             >
-                              해제
+                              삭제
                             </button>
-                          )}
-                          <button
-                            onClick={() => updateUserStatus(u.uid, 'rejected')}
-                            className="px-2.5 py-1 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
-                          >
-                            차단
-                          </button>
-                          <button
-                            onClick={() => deleteUser(u.uid, u.displayName)}
-                            className="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
-                          >
-                            삭제
-                          </button>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
