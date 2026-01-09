@@ -391,7 +391,7 @@ export default function UsersPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {approvedUsers.map((u) => (
-                  <div key={u.uid} className="px-3 py-2 lg:px-4 lg:py-3 flex items-center gap-3 hover:bg-gray-50">
+                  <div key={u.uid} className="px-3 py-2.5 lg:px-4 lg:py-3 flex items-center gap-3 hover:bg-gray-50">
                     {/* 프로필 */}
                     {u.photoURL ? (
                       <img src={u.photoURL} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
@@ -401,56 +401,57 @@ export default function UsersPage() {
                       </div>
                     )}
                     {/* 정보 */}
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <span className="font-medium text-gray-900 text-sm truncate">{u.displayName}</span>
-                      {u.role === 'admin' && (
-                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded flex-shrink-0">
-                          관리자
-                        </span>
-                      )}
-                      <span className="text-gray-400 text-xs hidden sm:inline truncate">{u.email}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 text-sm">{u.displayName}</span>
+                        {u.role === 'admin' && (
+                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded">
+                            관리자
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <span className="truncate">{u.email}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
+                      </div>
                     </div>
                     {/* 액션 버튼 */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => openEditModal(u)}
-                        className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                        title="이름 수정"
+                        className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                       >
-                        <Pencil className="w-4 h-4" />
+                        수정
                       </button>
                       {u.uid !== appUser.uid && (
                         <>
                           {u.role === 'user' ? (
                             <button
                               onClick={() => updateUserRole(u.uid, 'admin')}
-                              className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
-                              title="관리자 권한 부여"
+                              className="px-2 py-1 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
                             >
-                              <Shield className="w-4 h-4" />
+                              관리자
                             </button>
                           ) : (
                             <button
                               onClick={() => updateUserRole(u.uid, 'user')}
-                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                              title="관리자 권한 해제"
+                              className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
                             >
-                              <ShieldOff className="w-4 h-4" />
+                              해제
                             </button>
                           )}
                           <button
                             onClick={() => updateUserStatus(u.uid, 'rejected')}
-                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                            title="차단"
+                            className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
                           >
-                            <Ban className="w-4 h-4" />
+                            차단
                           </button>
                           <button
                             onClick={() => deleteUser(u.uid, u.displayName)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="삭제"
+                            className="px-2 py-1 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            삭제
                           </button>
                         </>
                       )}
