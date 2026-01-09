@@ -401,26 +401,22 @@ export default function UsersPage() {
                       </div>
                     )}
                     {/* 정보 */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 text-sm">{u.displayName}</span>
-                        {u.role === 'admin' && (
-                          <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded">
-                            관리자
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <span className="truncate">{u.email}</span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="hidden sm:inline whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
-                      </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900 text-sm">{u.displayName}</span>
+                      {u.role === 'admin' && (
+                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded">
+                          관리자
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400 truncate">{u.email}</span>
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
                     </div>
                     {/* 액션 버튼 */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => openEditModal(u)}
-                        className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                        className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                       >
                         수정
                       </button>
@@ -429,27 +425,27 @@ export default function UsersPage() {
                           {u.role === 'user' ? (
                             <button
                               onClick={() => updateUserRole(u.uid, 'admin')}
-                              className="px-2 py-1 text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded transition-colors"
+                              className="px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors"
                             >
                               관리자
                             </button>
                           ) : (
                             <button
                               onClick={() => updateUserRole(u.uid, 'user')}
-                              className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                              className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                             >
                               해제
                             </button>
                           )}
                           <button
                             onClick={() => updateUserStatus(u.uid, 'rejected')}
-                            className="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                            className="px-2.5 py-1 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
                           >
                             차단
                           </button>
                           <button
                             onClick={() => deleteUser(u.uid, u.displayName)}
-                            className="px-2 py-1 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors"
                           >
                             삭제
                           </button>
