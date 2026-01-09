@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth, AppUser } from '../contexts/AuthContext';
 
@@ -79,6 +79,17 @@ export default function UsersPage() {
   const openEditModal = (u: AppUser) => {
     setEditingUser(u);
     setNewName(u.displayName);
+  };
+
+  const deleteUser = async (uid: string, displayName: string) => {
+    if (!confirm(`정말 "${displayName}" 사용자를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      setUsers(users.filter(u => u.uid !== uid));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('사용자 삭제 중 오류가 발생했습니다.');
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -358,6 +369,12 @@ export default function UsersPage() {
                       >
                         거부
                       </button>
+                      <button
+                        onClick={() => deleteUser(u.uid, u.displayName)}
+                        className="flex-1 lg:flex-none px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                      >
+                        삭제
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -429,6 +446,12 @@ export default function UsersPage() {
                           >
                             접근 차단
                           </button>
+                          <button
+                            onClick={() => deleteUser(u.uid, u.displayName)}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+                          >
+                            삭제
+                          </button>
                         </>
                       )}
                     </div>
@@ -437,6 +460,49 @@ export default function UsersPage() {
               </div>
             )}
           </div>
+
+          {/* 거부된 사용자 */}
+          {rejectedUsers.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-red-50">
+                <h3 className="font-semibold text-red-800">거부된 사용자</h3>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {rejectedUsers.map((u) => (
+                  <div key={u.uid} className="p-4 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      {u.photoURL ? (
+                        <img src={u.photoURL} alt="Profile" className="w-12 h-12 rounded-full" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                          <span className="text-gray-600 font-medium text-lg">{u.displayName?.charAt(0) || '?'}</span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-gray-900">{u.displayName}</p>
+                        <p className="text-sm text-gray-500">{u.email}</p>
+                        <p className="text-xs text-gray-400 mt-1">가입: {formatDate(u.createdAt)}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateUserStatus(u.uid, 'approved')}
+                        className="flex-1 lg:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                      >
+                        승인
+                      </button>
+                      <button
+                        onClick={() => deleteUser(u.uid, u.displayName)}
+                        className="flex-1 lg:flex-none px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
