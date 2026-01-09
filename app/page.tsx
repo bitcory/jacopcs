@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from './lib/firebase';
+import { collection, getDocs, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { db, storage } from './lib/firebase';
 import { useAuth } from './contexts/AuthContext';
 import {
   Home as HomeIcon,
@@ -21,7 +22,11 @@ import {
   Play,
   Pause,
   X,
-  GripHorizontal
+  GripHorizontal,
+  Trash2,
+  Calendar,
+  Search,
+  XCircle
 } from 'lucide-react';
 
 interface Recording {
@@ -46,6 +51,17 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Date range filter
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Delete state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Recording | null>(null);
 
   // Audio player state
   const [currentRecording, setCurrentRecording] = useState<Recording | null>(null);
@@ -202,6 +218,45 @@ export default function Home() {
     }
   };
 
+  const deleteRecording = async (recording: Recording) => {
+    if (appUser?.role !== 'admin') return;
+
+    setDeletingId(recording.id);
+    try {
+      // Delete from Storage
+      if (recording.downloadUrl) {
+        try {
+          // Extract path from URL
+          const urlPath = decodeURIComponent(recording.downloadUrl.split('/o/')[1]?.split('?')[0] || '');
+          if (urlPath) {
+            const storageRef = ref(storage, urlPath);
+            await deleteObject(storageRef);
+          }
+        } catch (storageError) {
+          console.error('Storage delete error:', storageError);
+          // Continue with Firestore delete even if storage fails
+        }
+      }
+
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'recordings', recording.id));
+
+      // Update local state
+      setRecordings(prev => prev.filter(r => r.id !== recording.id));
+
+      // Close player if playing this recording
+      if (currentRecording?.id === recording.id) {
+        closePlayer();
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('삭제 실패: ' + (error as Error).message);
+    } finally {
+      setDeletingId(null);
+      setDeleteConfirm(null);
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('ko-KR');
   };
@@ -220,9 +275,43 @@ export default function Home() {
 
   const employees = [...new Set(recordings.map(r => r.employeeName))].filter(Boolean);
 
-  const filteredRecordings = filter === 'all'
-    ? recordings
-    : recordings.filter(r => r.employeeName === filter);
+  // Advanced filtering
+  const filteredRecordings = recordings.filter(recording => {
+    // Employee filter
+    if (filter !== 'all' && recording.employeeName !== filter) {
+      return false;
+    }
+
+    // Date range filter
+    if (startDate) {
+      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      if (recording.recordedAt < start) return false;
+    }
+    if (endDate) {
+      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      if (recording.recordedAt > end) return false;
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchPhone = recording.phoneNumber?.toLowerCase().includes(query);
+      const matchEmployee = recording.employeeName?.toLowerCase().includes(query);
+      const matchDate = formatDate(recording.recordedAt).toLowerCase().includes(query);
+      if (!matchPhone && !matchEmployee && !matchDate) return false;
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setSearchQuery('');
+    setFilter('all');
+  };
+
+  const hasActiveFilters = startDate || endDate || searchQuery || filter !== 'all';
 
   if (authLoading || loading || !user || !appUser || appUser.status !== 'approved') {
     return (
@@ -378,8 +467,51 @@ export default function Home() {
           </ul>
         </nav>
 
-        {/* 하단 영역 */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700 space-y-4">
+        {/* 필터 영역 */}
+        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          {/* 검색 */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-2 flex items-center gap-1">
+              <Search className="w-3 h-3" />
+              검색
+            </label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="전화번호, 직원명..."
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* 기간 필터 */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-2 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              기간 필터
+            </label>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">시작일</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">종료일</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* 직원 필터 */}
           <div>
             <label className="block text-xs text-slate-400 mb-2">직원 필터</label>
@@ -395,6 +527,20 @@ export default function Home() {
             </select>
           </div>
 
+          {/* 필터 초기화 */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors text-sm"
+            >
+              <XCircle className="w-4 h-4" />
+              필터 초기화
+            </button>
+          )}
+        </div>
+
+        {/* 하단 영역 */}
+        <div className="p-4 border-t border-slate-700">
           {/* 앱 다운로드 버튼 */}
           <a
             href="/jcopcs.apk"
@@ -545,7 +691,7 @@ export default function Home() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">통화시간</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">녹음일시</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">크기</th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">재생/다운로드</th>
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -604,6 +750,20 @@ export default function Home() {
                             >
                               <Download className="w-4 h-4" />
                             </button>
+                            {appUser?.role === 'admin' && (
+                              <button
+                                onClick={() => setDeleteConfirm(recording)}
+                                disabled={deletingId === recording.id}
+                                className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors disabled:opacity-50"
+                                title="삭제"
+                              >
+                                {deletingId === recording.id ? (
+                                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -659,7 +819,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* 재생/다운로드 버튼 */}
+                    {/* 재생/다운로드/삭제 버튼 */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => playRecording(recording)}
@@ -681,6 +841,19 @@ export default function Home() {
                       >
                         <Download className="w-4 h-4" /> 다운로드
                       </button>
+                      {appUser?.role === 'admin' && (
+                        <button
+                          onClick={() => setDeleteConfirm(recording)}
+                          disabled={deletingId === recording.id}
+                          className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                        >
+                          {deletingId === recording.id ? (
+                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -689,6 +862,66 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">녹음 삭제</h3>
+                <p className="text-sm text-gray-500">이 작업은 되돌릴 수 없습니다</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-500">직원:</span>
+                  <span className="ml-2 text-gray-900">{deleteConfirm.employeeName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">전화번호:</span>
+                  <span className="ml-2 text-gray-900 font-mono">{deleteConfirm.phoneNumber}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-500">녹음일시:</span>
+                  <span className="ml-2 text-gray-900">{formatDate(deleteConfirm.recordedAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => deleteRecording(deleteConfirm)}
+                disabled={deletingId === deleteConfirm.id}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deletingId === deleteConfirm.id ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    삭제 중...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    삭제
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
