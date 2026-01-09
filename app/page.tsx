@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { collection, getDocs, query, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from './lib/firebase';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth, AppUser } from './contexts/AuthContext';
 import {
   Home as HomeIcon,
   Users,
@@ -46,11 +46,13 @@ interface Recording {
 }
 
 export default function Home() {
-  const { user, appUser, loading: authLoading, logout } = useAuth();
+  const { user, appUser, loading: authLoading, logout, groups } = useAuth();
   const router = useRouter();
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [groupFilter, setGroupFilter] = useState('all');
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Date range filter
@@ -89,6 +91,7 @@ export default function Home() {
   useEffect(() => {
     if (appUser?.status === 'approved') {
       fetchRecordings();
+      fetchUsers();
     }
   }, [appUser]);
 
@@ -158,6 +161,17 @@ export default function Home() {
       console.error('Error fetching recordings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => doc.data() as AppUser);
+      setAllUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
     }
   };
 
@@ -276,11 +290,27 @@ export default function Home() {
 
   const employees = [...new Set(recordings.map(r => r.employeeName))].filter(Boolean);
 
+  // Helper function to get user's group
+  const getUserGroup = (employeeId: string) => {
+    const user = allUsers.find(u => u.uid === employeeId);
+    return user?.groupId;
+  };
+
   // Advanced filtering
   const filteredRecordings = recordings.filter(recording => {
     // Employee filter
     if (filter !== 'all' && recording.employeeName !== filter) {
       return false;
+    }
+
+    // Group filter
+    if (groupFilter !== 'all') {
+      const userGroupId = getUserGroup(recording.employeeId);
+      if (groupFilter === 'none') {
+        if (userGroupId) return false;
+      } else {
+        if (userGroupId !== groupFilter) return false;
+      }
     }
 
     // Date range filter
@@ -311,9 +341,10 @@ export default function Home() {
     setEndDate('');
     setSearchQuery('');
     setFilter('all');
+    setGroupFilter('all');
   };
 
-  const hasActiveFilters = startDate || endDate || searchQuery || filter !== 'all';
+  const hasActiveFilters = startDate || endDate || searchQuery || filter !== 'all' || groupFilter !== 'all';
 
   if (authLoading || loading || !user || !appUser || appUser.status !== 'approved') {
     return (
@@ -605,6 +636,24 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
+
+                {/* 그룹 필터 */}
+                {groups.length > 0 && (
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">그룹</label>
+                    <select
+                      value={groupFilter}
+                      onChange={(e) => setGroupFilter(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="all">전체 그룹</option>
+                      <option value="none">미지정</option>
+                      {groups.map(group => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* 필터 초기화 */}
                 {hasActiveFilters && (

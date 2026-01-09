@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAuth, AppUser } from '../contexts/AuthContext';
+import { useAuth, AppUser, UserGroup } from '../contexts/AuthContext';
 import {
   Home,
   Users,
@@ -23,17 +23,22 @@ import {
   Ban,
   Trash2,
   UserCheck,
-  UserX
+  UserX,
+  FolderPlus,
+  X,
+  ChevronDown
 } from 'lucide-react';
 
 export default function UsersPage() {
-  const { user, appUser, loading: authLoading, logout } = useAuth();
+  const { user, appUser, loading: authLoading, logout, groups, addGroup, deleteGroup, fetchGroups } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [newName, setNewName] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -101,6 +106,37 @@ export default function UsersPage() {
     setNewName(u.displayName);
   };
 
+  const updateUserGroup = async (uid: string, groupId: string | undefined) => {
+    try {
+      await updateDoc(doc(db, 'users', uid), { groupId: groupId || null });
+      setUsers(users.map(u => u.uid === uid ? { ...u, groupId } : u));
+    } catch (error) {
+      console.error('Error updating user group:', error);
+    }
+  };
+
+  const handleAddGroup = async () => {
+    if (!newGroupName.trim()) return;
+    await addGroup(newGroupName.trim());
+    setNewGroupName('');
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm('이 그룹을 삭제하시겠습니까?')) return;
+    await deleteGroup(groupId);
+    // 해당 그룹에 속한 사용자들의 그룹 할당 해제
+    const usersInGroup = users.filter(u => u.groupId === groupId);
+    for (const u of usersInGroup) {
+      await updateUserGroup(u.uid, undefined);
+    }
+  };
+
+  const getGroupName = (groupId?: string) => {
+    if (!groupId) return '미지정';
+    const group = groups.find(g => g.id === groupId);
+    return group?.name || '미지정';
+  };
+
   const deleteUser = async (uid: string, displayName: string) => {
     if (!confirm(`정말 "${displayName}" 사용자를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
     try {
@@ -134,6 +170,76 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* 그룹 관리 모달 */}
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">그룹 관리</h3>
+              <button
+                onClick={() => setShowGroupModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* 새 그룹 추가 */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddGroup()}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                placeholder="새 그룹 이름"
+              />
+              <button
+                onClick={handleAddGroup}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+              >
+                추가
+              </button>
+            </div>
+
+            {/* 그룹 목록 */}
+            <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
+              {groups.length === 0 ? (
+                <div className="p-4 text-center text-gray-500 text-sm">
+                  등록된 그룹이 없습니다
+                </div>
+              ) : (
+                groups.map((group) => {
+                  const memberCount = users.filter(u => u.groupId === group.id).length;
+                  return (
+                    <div key={group.id} className="flex items-center justify-between px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-800">{group.name}</span>
+                        <span className="text-xs text-gray-400">({memberCount}명)</span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGroup(group.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors"
+                        title="그룹 삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowGroupModal(false)}
+              className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 이름 수정 모달 */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -258,6 +364,13 @@ export default function UsersPage() {
             </div>
 
             <div className="flex items-center gap-2 lg:gap-3">
+              <button
+                onClick={() => setShowGroupModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors text-xs lg:text-sm"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">그룹 관리</span>
+              </button>
               <button
                 onClick={fetchUsers}
                 className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs lg:text-sm"
@@ -411,6 +524,19 @@ export default function UsersPage() {
                       <span className="text-xs text-gray-400 truncate">{u.email}</span>
                       <span className="text-xs text-gray-300">•</span>
                       <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>
+                    </div>
+                    {/* 그룹 선택 */}
+                    <div className="flex-shrink-0">
+                      <select
+                        value={u.groupId || ''}
+                        onChange={(e) => updateUserGroup(u.uid, e.target.value || undefined)}
+                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="">미지정</option>
+                        {groups.map((group) => (
+                          <option key={group.id} value={group.id}>{group.name}</option>
+                        ))}
+                      </select>
                     </div>
                     {/* 액션 버튼 */}
                     <div className="flex items-center gap-1 flex-shrink-0">
