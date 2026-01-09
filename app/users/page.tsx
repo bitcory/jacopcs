@@ -106,9 +106,10 @@ export default function UsersPage() {
     try {
       await deleteDoc(doc(db, 'users', uid));
       setUsers(users.filter(u => u.uid !== uid));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting user:', error);
-      alert('사용자 삭제 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      alert(`사용자 삭제 중 오류가 발생했습니다.\n\n오류: ${errorMessage}`);
     }
   };
 
