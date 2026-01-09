@@ -34,6 +34,7 @@ export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [newName, setNewName] = useState('');
@@ -58,8 +59,9 @@ export default function UsersPage() {
     }
   }, [appUser]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (isRefresh = false) => {
     try {
+      if (isRefresh) setIsRefreshing(true);
       const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => doc.data() as AppUser);
@@ -68,6 +70,7 @@ export default function UsersPage() {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+      if (isRefresh) setIsRefreshing(false);
     }
   };
 
@@ -372,11 +375,12 @@ export default function UsersPage() {
                 <span className="hidden sm:inline">그룹 관리</span>
               </button>
               <button
-                onClick={fetchUsers}
-                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs lg:text-sm"
+                onClick={() => fetchUsers(true)}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 text-xs lg:text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span className="hidden sm:inline">새로고침</span>
+                <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{isRefreshing ? '로딩중...' : '새로고침'}</span>
               </button>
 
               <div className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 border-l border-gray-200">

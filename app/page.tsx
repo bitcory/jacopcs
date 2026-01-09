@@ -50,6 +50,7 @@ export default function Home() {
   const router = useRouter();
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
   const [groupFilter, setGroupFilter] = useState('all');
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
@@ -148,8 +149,9 @@ export default function Home() {
     });
   };
 
-  const fetchRecordings = async () => {
+  const fetchRecordings = async (isRefresh = false) => {
     try {
+      if (isRefresh) setIsRefreshing(true);
       const q = query(collection(db, 'recordings'), orderBy('recordedAt', 'desc'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({
@@ -161,6 +163,7 @@ export default function Home() {
       console.error('Error fetching recordings:', error);
     } finally {
       setLoading(false);
+      if (isRefresh) setIsRefreshing(false);
     }
   };
 
@@ -534,11 +537,12 @@ export default function Home() {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={fetchRecordings}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                onClick={() => fetchRecordings(true)}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 text-sm disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span className="hidden sm:inline">새로고침</span>
+                <RefreshCw className={`w-4 h-4 transition-transform duration-500 ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+                <span className="hidden sm:inline">{isRefreshing ? '로딩중...' : '새로고침'}</span>
               </button>
 
               <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
