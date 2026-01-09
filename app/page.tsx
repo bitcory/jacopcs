@@ -33,6 +33,7 @@ interface Recording {
   id: string;
   fileName: string;
   phoneNumber: string;
+  contactName: string;
   callType: string;
   duration: number;
   recordedAt: number;
@@ -296,9 +297,10 @@ export default function Home() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchPhone = recording.phoneNumber?.toLowerCase().includes(query);
+      const matchContact = recording.contactName?.toLowerCase().includes(query);
       const matchEmployee = recording.employeeName?.toLowerCase().includes(query);
       const matchDate = formatDate(recording.recordedAt).toLowerCase().includes(query);
-      if (!matchPhone && !matchEmployee && !matchDate) return false;
+      if (!matchPhone && !matchContact && !matchEmployee && !matchDate) return false;
     }
 
     return true;
@@ -696,37 +698,40 @@ export default function Home() {
           ) : (
             <>
               {/* 데스크톱 테이블 */}
-              <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">직원</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">전화번호</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">유형</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">통화시간</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">녹음일시</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">크기</th>
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">액션</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">직원</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">연락처</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">전화번호</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">유형</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">통화시간</th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">녹음일시</th>
+                      <th className="px-4 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredRecordings.map((recording) => (
                       <tr key={recording.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                              <span className="text-indigo-600 font-medium">
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-indigo-600 font-medium text-sm">
                                 {recording.employeeName?.charAt(0) || '?'}
                               </span>
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{recording.employeeName}</div>
-                            </div>
+                            <div className="font-medium text-gray-900 text-sm">{recording.employeeName}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-900 font-mono">{recording.phoneNumber}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                        <td className="px-4 py-4 text-gray-900 text-sm max-w-[200px] truncate" title={recording.contactName || '-'}>
+                          {recording.contactName || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-4 text-gray-900 font-mono text-sm">
+                          {recording.phoneNumber || <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                             recording.callType === 'incoming'
                               ? 'bg-green-100 text-green-700'
                               : 'bg-blue-100 text-blue-700'
@@ -738,10 +743,9 @@ export default function Home() {
                             )}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-gray-900 font-mono">{formatDuration(recording.duration)}</td>
-                        <td className="px-6 py-4 text-gray-500 text-sm">{formatDate(recording.recordedAt)}</td>
-                        <td className="px-6 py-4 text-gray-500 text-sm">{formatFileSize(recording.fileSize)}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 text-gray-900 font-mono text-sm">{formatDuration(recording.duration)}</td>
+                        <td className="px-4 py-4 text-gray-500 text-sm whitespace-nowrap">{formatDate(recording.recordedAt)}</td>
+                        <td className="px-4 py-4">
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => playRecording(recording)}
@@ -815,10 +819,18 @@ export default function Home() {
                       </span>
                     </div>
 
+                    {/* 연락처 정보 */}
+                    {recording.contactName && (
+                      <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500">연락처</p>
+                        <p className="text-gray-900 font-medium">{recording.contactName}</p>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3 text-sm mb-3">
                       <div>
                         <p className="text-gray-500">전화번호</p>
-                        <p className="font-mono text-gray-900">{recording.phoneNumber}</p>
+                        <p className="font-mono text-gray-900">{recording.phoneNumber || '-'}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">통화시간</p>
